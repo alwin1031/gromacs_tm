@@ -37,5 +37,27 @@ def main():
     
     print("Command successfully generated in command.txt")
 
+def mk_md():
+    # Read parameters from param.txt
+    params = read_parameters("param.txt")
+    
+    # Read the command template from command_template.txt
+    with open("template/md_b.mdp", "r") as template_file:
+        template = template_file.read()
+    
+    # Substitute parameters into the template
+    try:
+        command = template.format(**params)
+    except KeyError as e:
+        print(f"Error: The placeholder {e} is missing a corresponding parameter in param.txt.")
+        return
+    
+    # Write the generated command to command.txt
+    with open("md_b.mdp", "w") as command_file:
+        command_file.write(command)
+    
+    print("Command successfully generated in md_b.mdp")
+
 if __name__ == '__main__':
     main()
+    mk_md()
