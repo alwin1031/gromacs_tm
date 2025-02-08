@@ -1,0 +1,43 @@
+title                   = AMBER99SB-ILDN Production MD 
+; Run parameters
+integrator              = md        ; leap-frog integrator
+nsteps                  = 10000000  ; 1 * 10000000 = 10000 ps (10 ns)
+dt                      = 0.001     ; 1 fs
+; Output control
+nstxout                 = 0         ; suppress bulky .trr file by specifying 
+nstvout                 = 0         ; 0 for output frequency of nstxout,
+nstfout                 = 0         ; nstvout, and nstfout
+nstenergy               = 2000      ; save energies every 2.0 ps
+nstlog                  = 2000      ; update log file every 2.0 ps
+nstxout-compressed      = 2000      ; save compressed coordinates every 2.0 ps
+compressed-x-grps       = System    ; save the whole system
+; Bond parameters
+continuation            = yes       ; Restarting after NPT 
+constraint_algorithm    = lincs     ; holonomic constraints 
+constraints             = h-bonds   ; bonds involving H are constrained
+lincs_iter              = 1         ; accuracy of LINCS (can change to 2 later)
+lincs_order             = 4         ; also related to accuracy
+; Neighborsearching
+cutoff-scheme           = Verlet    ; Buffered neighbor searching
+ns_type                 = grid      ; search neighboring grid cells
+nstlist                 = 5        ; 20 fs, largely irrelevant with Verlet scheme
+rcoulomb                = 1.2       ; short-range electrostatic cutoff (in nm)
+rvdw                    = 1.2       ; short-range van der Waals cutoff (in nm)
+; Electrostatics
+coulombtype             = PME       ; Particle Mesh Ewald for long-range electrostatics
+pme_order               = 4         ; cubic interpolation
+fourierspacing          = 0.12      ; grid spacing for FFT (GPT suggest 0.1)
+; Temperature coupling is on
+tcoupl                  = Nose-Hoover           ; modified Berendsen thermostat
+tc-grps                 = Protein Non-Protein   ; two coupling groups - more accurate
+tau_t                   = 0.1     0.1           ; time constant, in ps
+ref_t                   = {ref_t}     {ref_t}           ; reference temperature, one for each group, in K
+; Pressure coupling is off
+pcoupl                  = no
+
+; Periodic boundary conditions
+pbc                     = xyz       ; 3-D PBC
+; Dispersion correction
+DispCorr                = EnerPres  ; account for cut-off vdW scheme
+; Velocity generation
+gen_vel                 = no        ; Velocity generation is off 
