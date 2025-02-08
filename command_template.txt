@@ -1,0 +1,36 @@
+gmx pdb2gmx -f {protein_name}_clean.pdb -o {protein_name}_processed.gro -ff amber99sb -water tip3p -ter
+gmx editconf -f {protein_name}_processed.gro -o newbox.gro -c -d 1.0 -bt dodecahedron
+gmx solvate -cp newbox.gro -cs spc216.gro -o solv.gro -p topol.top
+gmx grompp -f ions.mdp -c solv.gro -p topol.top -o ions.tpr
+echo "SOL" | gmx genion -s ions.tpr -o solv_ions.gro -p topol.top -pname NA -nname CL -neutral
+gmx grompp -f minim.mdp -c solv_ions.gro -p topol.top -o em.tpr
+gmx mdrun -deffnm em -v
+gmx grompp -f nvt_1b.mdp -c em.gro -r em.gro -p topol.top -o nvt_1b.tpr
+gmx mdrun -deffnm nvt_1b -v
+gmx grompp -f nvt_2b.mdp -c nvt_1b.gro -p topol.top -o nvt_2b.tpr
+gmx mdrun -deffnm nvt_2b -v
+gmx grompp -f npt_1b.mdp -c nvt_2b.gro -t nvt_2b.cpt -r nvt_2b.gro -p topol.top -o npt_1b.tpr
+gmx mdrun -deffnm npt_1b -v
+gmx grompp -f npt_2b.mdp -c npt_1b.gro -t npt_1b.cpt -p topol.top -o npt_2b.tpr
+gmx mdrun -deffnm npt_2b -v
+gmx grompp -f md_b.mdp -c npt_2b.gro -t npt_2b.cpt -p topol.top -o md_0_10.tpr
+gmx mdrun -deffnm md_0_10 -v
+
+printf 'a 1-5034\nname 17 chain_A\nq\n' | gmx make_ndx -f em.gro -o index.ndx
+echo 17 0 | gmx trjconv -s md_0_10.tpr -f md_0_10.xtc -o md_0_10_center.xtc -center -pbc mol -ur compact -n index.ndx
+echo 4 0 | gmx trjconv -s md_0_10.tpr -f md_0_10_center.xtc -o md_0_10_fit.xtc -fit rot+trans
+echo 0 | gmx trjconv -s md_0_10.tpr -f md_0_10_center.xtc -o start.pdb -dump 0
+
+echo "Backbone" | gmx rmsf -f md_0_10_fit.xtc -s md_0_10.tpr -o {protein_name}_rmsf.xvg -res
+python3 python/trans_rmsf.py -f {protein_name}_rmsf.xvg -o {protein_name}_rmsf.png
+
+echo "Backbone" "Backbone" | gmx rms -f md_0_10_fit.xtc -s md_0_10.tpr -o {protein_name}_rmsd.xvg -tu ns
+python3 python/trans_rmsd.py -f {protein_name}_rmsd.xvg -o {protein_name}_rmsd.png
+
+gmx dssp -f md_0_10_fit.xtc -s md_0_10.tpr -o {protein_name}_dssp.dat
+python3 python/trans_dssp.py -f {protein_name}_dssp.dat -o {protein_name}_dssp.png -t 0.01
+
+
+chimerax --cmd "open start.pdb; open ./md_0_10_fix.xtc structureModel #1;"
+# pkill -9 chimerax
+# gmx dssp -f md_0_10_fit.xtc -s md_0_10.tpr -o {protein_name}_dssp.dat -b 1000 -e 5000
